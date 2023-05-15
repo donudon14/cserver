@@ -3,6 +3,7 @@
  */
 #define _GNU_SOURCE
 #include "cserver.h"
+#include <assert.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,6 +13,9 @@ struct ServerRec
   Boolean shutdown_requested;
 
   Mutex mutex;
+  Condition condition;
+  Client head, tail, next;
+  size_t pool_size, connections;
 };
 
 typedef struct ClientRec ClientStruct;
@@ -21,7 +25,7 @@ struct ClientRec
   int conn_fd;
 
   /* Linked list.  If no next element, this will be NULL.*/
-  Client next_client;
+  Client prev_client, next_client;
 
   /* Allow overriding IO calls for easier mocking. */
   int (*read)(Client client, char *buf, size_t bytes, void *context);
@@ -31,10 +35,71 @@ struct ClientRec
   void *write_context;
 };
 
+/* When communicate() is done, the client context should be removed from
+   the list with this call. */
+static void server_destroy_client(Server server, Client client)
+{
+  mutex_lock(server->mutex);
+  assert(server->connections && server->head && server->tail &&
+    (server->connections <= server->pool_size || server->next)
+  );
+  if (client->prev_client)
+    client->prev_client->next_client = client->next_client;
+  else
+    server->head = client->next_client;
+  if (client->next_client)
+    client->next_client->prev_client = client->prev_client;
+  else
+    server->tail = client->prev_client;
+  --server->connections;
+  mutex_unlock(server->mutex);
+}
+
+static void *server_thread(void * const context) {
+  const Server server = (Server) context;
+  Boolean success = TRUE;
+  while (TRUE) {
+    mutex_lock(server->mutex);
+    assert(!server->connections == !server->head &&
+      !server->connections == !server->tail &&
+      (server->connections <= server->pool_size || server->next)
+    );
+    if (!server_shutdown_requested(server))
+      break;
+    if (!server->next) {
+      condition_wait(server->condition, server->mutex);
+      continue;
+    }
+    const Client client = server->next;
+    server->next = server->next->next_client;
+    mutex_unlock(server->mutex);
+
+    DEBUG(("Communicating"));
+    success = communicate(server, client);
+    DEBUG(("Communication %s", success ? "succesful" : "failed"));
+    if (!success)
+      warning("Failed to accept connection");
+
+    server_destroy_client(server, client);
+    client_destroy(client);
+  }
+  mutex_lock(server->mutex);
+  assert(server->pool_size);
+  --server->pool_size;
+  if (!server->pool_size)
+    condition_signal(server->condition);
+  mutex_unlock(server->mutex);
+  return NULL;
+}
+
 Server server_create(void)
 {
-  Server server = xcalloc(1, sizeof(*server));
+  const Server server = xcalloc(1, sizeof(*server));
   server->mutex = mutex_create();
+  server->condition = condition_create();
+  server->pool_size = 64U;
+  for (size_t i = 0; i < server->pool_size; ++i)
+    thread_create(server_thread, server);
   return server;
 }
 
@@ -62,22 +127,23 @@ Boolean server_shutdown_requested(Server server)
 Boolean server_accept_connection(Server server, int conn_fd, char **errors_ret)
 {
   /* STUB IMPLEMENTATION, DOES NOT SATISFY REQUIREMENTS. */
-  Client client;
-  Boolean success;
   DEBUG(("Got connection"));
-  client = client_create(conn_fd, NULL);
-  DEBUG(("Communicating"));
-  success = communicate(server, client);
-  DEBUG(("Communication %s", success ? "succesful" : "failed"));
-  client_destroy(client);
-  return success;
-}
-
-/* When communicate() is done, the client context should be removed from
-   the list with this call. */
-void server_destroy_client(Server server, Client client)
-{
-
+  const Client client = client_create(conn_fd, NULL);
+  mutex_lock(server->mutex);
+  assert(!server->connections == !server->head &&
+    !server->connections == !server->tail &&
+    (server->connections <= server->pool_size || server->next)
+  );
+  if (server->connections)
+    server->tail = server->tail->next_client = client;
+  else
+    server->head = server->tail = client;
+  if (!server->next)
+    server->next = client;
+  ++server->connections;
+  condition_signal(server->condition);
+  mutex_unlock(server->mutex);
+  return TRUE;
 }
 
 /* Functions used to communicate by default. */
