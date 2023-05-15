@@ -1,0 +1,68 @@
+TASK:
+
+multithreaded server, handling each request in a separate thread
+
+Your task is to:
+
+* modify the server to handle requests concurrently
+
+* there might be a lot of incoming requests, so you need to take care in
+  allocating the worker threads (to not swamp the system)
+
+* the server should maintain a list of the connected clients for listing
+  and aggregating information from other clients.
+
+* you should implement the function server_accept_connection to handle
+  the request according to the requirements.  Also LIST and NUMCLIENTS
+  commands should be implemented.  Look for the string STUB in the
+  comments.
+
+* the system should support at least 10 requests to be handled at any
+  given time.
+
+* there is a very simple test script implemented with python, client.py,
+  that you can use to test your implemententation.  Feel free to expand
+  it if you wish.
+
+* create any unittests you see fit.
+
+Use 2-4 hours for the assignment.  If you feel you want to take more
+time, you are free to do so.  In any case, report your time expenditure
+with your solution.  Also, in addition to code, please provide a brief
+description of what you did.
+
+The hardest thing to get right will be the shutdown logic.  You might
+want to skip implementing that altogether, and just call exit() when the
+time comes.
+
+Do not be discouraged if you are unable to get a "perfect" solution in
+the time allotted!  If at first you fail, restrict the system somehow,
+and return your solution.  You need to document any restrictions, of
+course.
+
+Use the file REPORT.txt for reporting your results.  Return the files in
+a compressed tar archive.  After modifications, the system must be
+buildable and coverage able to run using commands "make", "make
+check", and "make coverage".
+
+== Prerequisites ==
+
+The application assumes a reasonably new Linux system for compilations
+and testing.  You should verify that the system works by running "make
+check" before you start.  The tests should pass in your system.  System
+used to create the software was Mac OSX El Capitan and Linux Mint 12.04,
+and verified to work on a Debian 7.1 system, but newer systems should
+work just fine.
+
+To enable code coverage reporting, you will need to install the lcov
+package (tested with version 1.9).  Code coverage can be obtained by
+running "make coverage".
+
+== Compiling and running the server ==
+
+The stub server can be compiled by running "make" in the project
+directory.
+
+ % ./app
+ <waits and processes for requests...>
+
