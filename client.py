@@ -18,4 +18,4 @@ if __name__ == "__main__":
             break
 
         line.append(ch)
-    print ''.join(line)
+    print(''.join(line))
