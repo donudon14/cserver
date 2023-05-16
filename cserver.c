@@ -64,7 +64,7 @@ static void *server_thread(void * const context) {
       !server->connections == !server->tail &&
       (server->connections <= server->pool_size || server->next)
     );
-    if (!server_shutdown_requested(server))
+    if (server_shutdown_requested(server))
       break;
     if (!server->next) {
       condition_wait(server->condition, server->mutex);
