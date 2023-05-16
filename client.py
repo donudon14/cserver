@@ -12,10 +12,10 @@ if __name__ == "__main__":
     while True:
         ch = server_file.read(1)
         if not ch:
-            print("Got EOF")
+            print "Got EOF"
             break
         if ch == '\n':
             break
 
         line.append(ch)
-    print(''.join(line))
+    print ''.join(line)
