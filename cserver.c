@@ -57,7 +57,6 @@ static void server_destroy_client(Server server, Client client)
 
 static void *server_thread(void * const context) {
   const Server server = (Server) context;
-  Boolean success = TRUE;
   while (TRUE) {
     mutex_lock(server->mutex);
     assert(!server->connections == !server->head &&
@@ -75,7 +74,7 @@ static void *server_thread(void * const context) {
     mutex_unlock(server->mutex);
 
     DEBUG(("Communicating"));
-    success = communicate(server, client);
+    const Boolean success = communicate(server, client);
     DEBUG(("Communication %s", success ? "succesful" : "failed"));
     if (!success)
       warning("Failed to accept connection");
