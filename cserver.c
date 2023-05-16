@@ -37,7 +37,7 @@ struct ClientRec
 
 /* When communicate() is done, the client context should be removed from
    the list with this call. */
-static void server_destroy_client(Server server, Client client)
+static void server_destroy_client(const Server server, const Client client)
 {
   mutex_lock(server->mutex);
   assert(server->connections && server->head && server->tail &&
@@ -101,7 +101,7 @@ Server server_create(void)
   return server;
 }
 
-void server_destroy(Server server)
+void server_destroy(const Server server)
 {
   if (!server)
     return;
@@ -115,20 +115,23 @@ void server_destroy(Server server)
   xfree(server);
 }
 
-void server_shutdown(Server server)
+void server_shutdown(const Server server)
 {
   server->shutdown_requested = TRUE;
 }
 
-Boolean server_shutdown_requested(Server server)
+Boolean server_shutdown_requested(const Server server)
 {
   return server->shutdown_requested;
 }
 
 /* Create a Client object, append it to the list of running jobs, start
    a thread and call communicate on the connection.  */
-Boolean server_accept_connection(Server server, int conn_fd, char **errors_ret)
-{
+Boolean server_accept_connection(
+    const Server server,
+    const int conn_fd,
+    char ** const errors_ret
+) {
   /* STUB IMPLEMENTATION, DOES NOT SATISFY REQUIREMENTS. */
   DEBUG(("Got connection"));
   const Client client = client_create(conn_fd, NULL);
