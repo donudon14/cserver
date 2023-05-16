@@ -80,6 +80,7 @@ int main(int argc, char **argv)
       xfree(errors);
     }
 
+  server_destroy(server);
   exit_value = 0;
  error:
   if (sock_fd >= 0)
