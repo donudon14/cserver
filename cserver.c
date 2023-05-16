@@ -64,12 +64,11 @@ static void *server_thread(void * const context) {
       !server->connections == !server->tail &&
       (server->connections <= server->pool_size || server->next)
     );
-    while (!server->next) {
-      if (server_shutdown_requested(server)) {
-        mutex_unlock(server->mutex);
-        break;
-      }
+    while (!server_shutdown_requested(server) && !server->next)
       condition_wait(server->condition, server->mutex);
+    if (server_shutdown_requested(server) && !server->next) {
+      mutex_unlock(server->mutex);
+      break;
     }
     const Client client = server->next;
     server->next = server->next->next_client;
