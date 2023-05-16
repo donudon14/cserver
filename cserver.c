@@ -66,10 +66,8 @@ static void *server_thread(void * const context) {
     );
     if (server_shutdown_requested(server))
       break;
-    if (!server->next) {
+    while (!server->next)
       condition_wait(server->condition, server->mutex);
-      continue;
-    }
     const Client client = server->next;
     server->next = server->next->next_client;
     mutex_unlock(server->mutex);
