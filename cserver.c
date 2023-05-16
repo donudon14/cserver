@@ -110,7 +110,7 @@ void server_destroy(Server server)
   while (server->pool_size)
     condition_wait(server->condition, server->mutex);
   mutex_unlock(server->mutex);
-  condition_destroy(server->mutex);
+  condition_destroy(server->condition);
   mutex_destroy(server->mutex);
   xfree(server);
 }
