@@ -86,8 +86,7 @@ static void *server_thread(void * const context) {
   mutex_lock(server->mutex);
   assert(server->pool_size);
   --server->pool_size;
-  if (!server->pool_size)
-    condition_signal(server->condition);
+  condition_signal(server->condition);
   mutex_unlock(server->mutex);
   return NULL;
 }
