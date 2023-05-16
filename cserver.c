@@ -106,6 +106,11 @@ void server_destroy(Server server)
   if (!server)
     return;
 
+  mutex_lock(server->mutex);
+  while (server->pool_size)
+    condition_wait(server->condition, server->mutex);
+  mutex_unlock(server->mutex);
+  condition_destroy(server->mutex);
   mutex_destroy(server->mutex);
   xfree(server);
 }
