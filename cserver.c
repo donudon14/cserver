@@ -241,13 +241,25 @@ Boolean process_line(Server server, Client client,
     }
   else if (!strcmp(op, "LIST"))
     {
-      /* Operands ignored, we just return the list of connected clients. */
-      /* STUB: needs to be implemented */
+      mutex_lock(server->mutex);
+      if (server->connections) {
+        *reply_ret = string_format("%d", server->connections);
+        for (Client current = server->head;
+          current; current = current->next_client
+        ) {
+          char * const new_string =
+            string_format("%s %d", *reply_ret, current->conn_fd);
+          xfree(*reply_ret);
+          *reply_ret = new_string;
+        }
+      }
+      mutex_unlock(server->mutex);
     }
   else if (!strcmp(op, "NUMCLIENTS"))
     {
-      /* Operands ignored, we just return the number of clients. */
-      /* STUB: needs to be implemented */
+      mutex_lock(server->mutex);
+      *reply_ret = string_format("%d", server->connections);
+      mutex_unlock(server->mutex);
     }
   else
     {
